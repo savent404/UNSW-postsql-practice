@@ -98,9 +98,31 @@ as
 ;
 
 -- Q6:
+-- not for sure;
+
+-- semester=10S1, stream.name='Management', student.stype='local'
+create or replace view Q6_listAllRelatedRecord(student, offeredByOrgUnit)
+as 
+	select std.id, s.offeredBy 
+	from semesters sem 
+	join Program_enrolments pe on (sem.year=2010 and sem.term='S1' and pe.semester=sem.id) 
+	join stream_enrolments se on (se.partof=pe.id) 
+	join streams s on (s.id=se.stream and s.name='Management') 
+	join students std on (std.id=pe.student and std.stype='local')
+;
+
+create or replace view Q6_searchOfferedByFE(student)
+as 
+	select student 
+	from Q6_listAllRelatedStudent 
+	where offeredByOrgUnit=(select id from OrgUnits where name='Faculty of Engineering')
+;
+
 create or replace view Q6(num)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+	select count(distinct a1.student) 
+	from Q6_listAllRelatedRecord a1 
+	where a1.student not in (select student from Q6_listStudentOfferedByFE)
 ;
 
 -- Q7:
