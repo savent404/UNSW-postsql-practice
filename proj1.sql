@@ -65,9 +65,36 @@ as
 ;
 
 --Q5:
+create or replace view Q5_summaryEnrolmentsHasValidMark(course, count, maximumMark)
+as 
+	select course, count(*), MAX(mark)
+	from course_enrolments 
+	where (mark is not null) group by course
+;
+
+create or replace view Q5_valideCourseList(course, subject, semester, maximumMark)
+as 
+	select c.id, c.subject, c.semester, ans.count 
+	from Q5_summaryEnrolmentsHasValidMark ans join courses c 
+	on (c.id=ans.course and ans.count > 19)
+;
+create or replace view Q5_listMin(semester, min)
+as 
+	select semester, min(maximumMark) 
+	from Q5_valideCourseList 
+	group by semester
+;
+create or replace view Q5_listSemesters(subject, semester)
+as 
+	select a1.subject, a1.semester 
+	from Q5_valideCourseList a1 join Q5_listMin a2 
+	on (a1.semester=a2.semester and a1.maximumMark=a2.min)
+;
 create or replace view Q5(code, name, semester)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+	select s.code, s.name, ans.semester 
+	from Q5_listSemesters ans join subjects s 
+	on (ans.subject=s.id)
 ;
 
 -- Q6:
