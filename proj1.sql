@@ -33,9 +33,35 @@ as
 ;
 -- Q4:
 
+-- get valide student list (at least one mark is not null)
+create or replace view Q4_valideStudent(id)
+as 
+	select distinct p.unswid 
+	from course_enrolments c join people p 
+	on (c.student=p.id and c.mark is not null)
+;
+
+-- get every record that get more HD
+create or replace view Q4_hdRecord(student,course,mark) 
+as 
+	select p.unswid, c.course, c.mark 
+	from course_enrolments c join people p 
+	on (c.student=p.id and p.unswid in (select unswid from Q4_valideStudent) and c.mark > 84)
+;
+-- summary every student has how many HD who has at least one HD
+create or replace view Q4_hdSummary(student, count)
+as 
+	select p.unswid, count(*) 
+	from course_enrolments c join people p 
+	on (c.student=p.id and p.unswid in (select unswid from Q4_valideStudent) and c.mark > 84)
+	group by p.unswid
+;
+
 create or replace view Q4(num_student)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+	select count(*) 
+	from Q4_hdSummary 
+	where (count > ((select count(*) from Q4_hdRecord) / (select count(*) from Q4_valideStudent)))
 ;
 
 --Q5:
