@@ -126,9 +126,30 @@ as
 ;
 
 -- Q7:
+create or replace view Q7_valideSubject(subject) 
+as 
+	select id from subjects where (name='Database Systems')
+;
+
+create or replace view Q7_valideCourse(course, semester)
+as 
+	select c.id, c.semester 
+	from Q7_valideSubject s join courses c 
+	on (c.subject=s.subject)
+;
+
+create or replace view Q7_aveMark(semester, aveMark)
+as 
+	select c.semester, cast(avg(ce.mark) as numeric(4,2))
+	from Q7_valideCourse c join course_enrolments ce 
+	on (ce.course=c.course and ce.mark is not null) group by c.semester
+;
+
 create or replace view Q7(year, term, average_mark)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+	select sem.year, sem.term, ave.aveMark 
+	from Q7_aveMark ave, semesters sem 
+	where (ave.semester=sem.id)
 ;
 
 -- Q8: 
