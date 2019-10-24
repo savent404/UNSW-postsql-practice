@@ -24,13 +24,6 @@ as
 ;
 
 -- Q3:
-create or replace view tmp(unswid, name)
-as 
-	select distinct p.unswid,p.name, cc.mark
-	from subjects s, courses c, course_enrolments cc, people p 
-	where ((s.code='COMP9311' or s.code='COMP9024') and c.subject=s.id and cc.course=c.id and p.id=cc.student)
-;
-
 create or replace view Q3(unswid, name)
 as 
 	select p.unswid,p.name  
