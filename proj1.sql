@@ -155,26 +155,28 @@ as
 -- Q8: 
 create or replace view Q8_prefixSubject(subject) 
 as 
-select id from subjects where code like 'COMP93%'
+-- select id from subjects where code like 'COMP93%'
+select id from subjects
 ;
 
 create or replace view Q8_matchedSemester(semester)
 as 
-select distinct id,term,year from semesters s  
-where s.term like 'S%' and s.year < 2014 and s.year > 2003 
+select distinct id from semesters s  
+where s.year < 2014 and s.year > 2003 and name like 'Sem%'
 ;
 create or replace view Q8_matchedCourse(course) 
 as 
--- match code='COMP93%'
-select c.subject, c.id, c.semester from courses c join Q8_prefixSubject prefix on c.subject=prefix.subject 
--- only appears in matched semesters
-join Q8_matchedSemester sem on c.semester=sem.semester 
--- group by c.subject having count(distinct c.semester) > 5
+select c.subject, count(distinct c.id) from 
+courses c, Q8_prefixSubject sub,  Q8_matchedSemester sem where 
+c.subject=sub.subject and c.semester=sem.semester 
+group by c.subject having count(distinct c.id) > 10 
 ;
 
 create or replace view Q8(zid, name)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+select distinct p.unswid, p.name from 
+Q8_matchedCourse mc, course_enrolments ce, people p 
+where mc.course=ce.course and p.id=ce.student
 ;
 -- Q9:
 
