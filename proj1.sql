@@ -217,7 +217,36 @@ l.uoc>=pro.uoc
 ;
 
 -- Q10:
+create or replace view Q10_roomHasLT(room, runswid, rlongname)
+as 
+select distinct r.id, r.unswid, r.longname from rooms r, room_types rt where rt.description='Lecture Theatre' and rt.id=r.rtype
+;
+create or replace view Q10_classesIn2011usingLT(class)
+as 
+select distinct c.id from classes c, Q10_roomHasLT q, semesters s 
+where c.room=q.room and s.year=2011 and s.term='S1' and (c.startdate, c.enddate) overlaps (s.starting, s.ending)
+;
+create or replace view Q10_usage(class, room, usage, runswid, rlongname)
+as 
+select c.id, r.id, ceil(extract(doy from c.enddate) - extract(doy from c.startdate)/7) * c.dayofwk, r.unswid, r.longname from 
+classes c, Q10_classesIn2011usingLT q, rooms r where 
+q.class=c.id and c.room=r.id
+;
+create or replace view Q10_usage(usage, runswid, rlongname)
+as 
+select sum(ceil(extract(doy from c.enddate) - extract(doy from c.startdate)/7) * c.dayofwk), r.unswid, r.longname from 
+classes c, Q10_classesIn2011usingLT q, rooms r where 
+q.class=c.id and c.room=r.id group by r.unswid, r.longname
+;
+
+create or replace view Q10_fillWithZero(runswid, rlongname, usage) 
+as 
+select r.runswid, r.rlongname, case when q.usage is null then 0 else q.usage end from 
+Q10_usage q right join Q10_roomHasLT r  on (q.runswid=r.runswid)
+;
+
 create or replace view Q10(unswid, longname, num, rank)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+as 
+select runswid, rlongname, usage, rank() over(order by usage desc) 
+from Q10_fillWithZero
 ;
