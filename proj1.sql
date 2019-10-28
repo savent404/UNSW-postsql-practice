@@ -153,15 +153,67 @@ as
 ;
 
 -- Q8: 
+create or replace view Q8_prefixSubject(subject) 
+as 
+select id from subjects where code like 'COMP93%'
+;
+
+create or replace view Q8_matchedSemester(semester)
+as 
+select distinct id,term,year from semesters s  
+where s.term like 'S%' and s.year < 2014 and s.year > 2003 
+;
+create or replace view Q8_matchedCourse(course) 
+as 
+-- match code='COMP93%'
+select c.subject, c.id, c.semester from courses c join Q8_prefixSubject prefix on c.subject=prefix.subject 
+-- only appears in matched semesters
+join Q8_matchedSemester sem on c.semester=sem.semester 
+-- group by c.subject having count(distinct c.semester) > 5
+;
+
 create or replace view Q8(zid, name)
 as
 --... SQL statements, possibly using other views/functions defined by you ...
 ;
-
 -- Q9:
-create or replace view Q9(unswid, name)
-as
---... SQL statements, possibly using other views/functions defined by you ...
+
+-- enroll a program in BSc (refer to program_degrees.abbrev) 
+create or replace view Q9_enroledStudents(student) 
+as 
+select distinct student from Program_enrolments e join program_degrees d on (d.abbrev='BSc' and e.program=d.program)
+;
+
+-- must pass at least one course in the program in semester 2010 S2.
+create or replace view Q9_passCourseIn10S2(student) 
+as 
+select distinct q.student from 
+course_enrolments ce, Q9_enroledStudents q, courses c, semesters s where 
+q.student=ce.student and ce.course=c.id and s.id=c.semester and 
+ce.mark > 49 and s.year=2010 and s.term='S2'
+;
+-- average mark >= 80. Average mark means the average mark of all courses a student has passed before 2011(exclusive) in the program.
+create or replace view Q9_matchedAveMark(student) 
+as 
+select distinct ce.student from course_enrolments ce, Q9_passCourseIn10S2 q where 
+ce.student=q.student and ce.mark > 49 
+group by ce.student having avg(ce.mark) >= 80
+;
+
+-- earned UOC
+create or replace view Q9_earnedUOC(student, uoc) 
+as 
+select distinct ce.student, sum(s.UOC) from 
+course_enrolments ce, Q9_matchedAveMark q, courses c, subjects s 
+where ce.student=q.student and ce.mark >= 50 and c.id=ce.course and c.subject=s.id
+group by ce.student 
+;
+create or replace view Q9(unswid, name) 
+as 
+select distinct p.unswid, p.name from 
+Q9_earnedUOC l, program_enrolments pe, programs pro, people p 
+where l.student=pe.student and pro.id=pe.program and p.id=l.student and 
+l.uoc>=pro.uoc
 ;
 
 -- Q10:
