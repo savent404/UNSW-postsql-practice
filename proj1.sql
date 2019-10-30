@@ -81,36 +81,26 @@ as
 ;
 
 --Q5:
-create or replace view Q5_summaryEnrolmentsHasValidMark(course, count, maximumMark)
+create or replace view Q5_valideCourse(course, semester, maxMark)
 as 
-	select course, count(*), MAX(mark)
-	from course_enrolments 
-	where (mark is not null) group by course
+	select c.id, s.id, max(ce.mark) from 
+	courses c, course_enrolments ce, semesters s 
+	where c.id=ce.course and ce.mark is not null and c.semester=s.id 
+	group by c.id, s.id having count(*) >= 20
+;
+create or replace view Q5_minList(semester, minMark) 
+as 
+	select q.semester , min(q.maxMark) 
+	from Q5_valideCourse q 
+	group by q.semester 
 ;
 
-create or replace view Q5_valideCourseList(course, subject, semester, maximumMark)
-as 
-	select c.id, c.subject, c.semester, ans.count 
-	from Q5_summaryEnrolmentsHasValidMark ans join courses c 
-	on (c.id=ans.course and ans.count > 19)
-;
-create or replace view Q5_listMin(semester, min)
-as 
-	select semester, min(maximumMark) 
-	from Q5_valideCourseList 
-	group by semester
-;
-create or replace view Q5_listSemesters(subject, semester)
-as 
-	select a1.subject, a1.semester 
-	from Q5_valideCourseList a1 join Q5_listMin a2 
-	on (a1.semester=a2.semester and a1.maximumMark=a2.min)
-;
 create or replace view Q5(code, name, semester)
 as 
-	select s.code, s.name, ans.semester 
-	from Q5_listSemesters ans join subjects s 
-	on (ans.subject=s.id)
+	select s.code, s.name, sem.name from 
+	Q5_valideCourse q1 join Q5_minList q2 on q1.semester=q2.semester and q1.maxMark=q2.minMark ,
+	subjects s, courses c, semesters sem 
+	where s.id=c.subject and c.semester=sem.id and c.id=q1.course
 ;
 
 -- Q6:
