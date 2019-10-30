@@ -191,42 +191,53 @@ where mc.course=ce.course and p.id=ce.student
 ;
 -- Q9:
 
+
+create or replace view Q9_before2011(semester)
+as 
+select id from semesters where year < 2011
+;
+
 -- enroll a program in BSc (refer to program_degrees.abbrev) 
-create or replace view Q9_enroledStudents(student) 
-as 
-select distinct student from Program_enrolments e join program_degrees d on (d.abbrev='BSc' and e.program=d.program)
-;
-
 -- must pass at least one course in the program in semester 2010 S2.
-create or replace view Q9_passCourseIn10S2(student) 
+create or replace view Q9_valideStudentIn10S2(student)
 as 
-select distinct q.student from 
-course_enrolments ce, Q9_enroledStudents q, courses c, semesters s where 
-q.student=ce.student and ce.course=c.id and s.id=c.semester and 
-ce.mark > 49 and s.year=2010 and s.term='S2'
-;
--- average mark >= 80. Average mark means the average mark of all courses a student has passed before 2011(exclusive) in the program.
-create or replace view Q9_matchedAveMark(student) 
-as 
-select distinct ce.student from course_enrolments ce, Q9_passCourseIn10S2 q where 
-ce.student=q.student and ce.mark > 49 
-group by ce.student having avg(ce.mark) >= 80
+	select distinct pe.student from 
+	semesters s join program_enrolments pe on (s.year=2010 and s.term='S2' and pe.semester=s.id)
+	join program_degrees pd on (pd.abbrev='BSc' and pd.program=pe.program)
+	join course_enrolments ce on (ce.mark >= 50 and pe.student=ce.student)
+	join courses c on (c.id=ce.course and c.semester=s.id) 
 ;
 
--- earned UOC
-create or replace view Q9_earnedUOC(student, uoc) 
+-- all invalide record (before 2011, passed mark, student who win in 10S2)
+create or replace view Q9_valideRecordMark(student, program, course, mark)
 as 
-select distinct ce.student, sum(s.UOC) from 
-course_enrolments ce, Q9_matchedAveMark q, courses c, subjects s 
-where ce.student=q.student and ce.mark >= 50 and c.id=ce.course and c.subject=s.id
-group by ce.student 
+	select pe.student, pe.program, c.id, ce.mark from program_enrolments pe 
+	join Q9_valideStudentIn10S2 q on (q.student=pe.student and pe.semester in (select * from Q9_before2011))
+	join course_enrolments ce on (ce.student = q.student and ce.mark >= 50)
+	join courses c on (c.id=ce.course and c.semester in (select * from Q9_before2011) and pe.semester=c.semester)
 ;
+
+-- average mark >= 80
+create or replace view Q9_matchedAvgMark(student)
+as 
+	select student from Q9_valideRecordMark group by student having (avg(mark) >= 80)
+;
+
+create or replace view Q9_earnedUOC(student, program, uoc)
+as 
+	select q2.student, q2.program, sum(s.uoc) 
+	from Q9_matchedAveMark q1 join Q9_valideRecordMark q2 on (q1.student=q2.student) 
+	join courses c on (q2.course=c.id) 
+	join subjects s on (c.subject=s.id) 
+	group by q2.student, q2.program
+;
+
 create or replace view Q9(unswid, name) 
 as 
 select distinct p.unswid, p.name from 
-Q9_earnedUOC l, program_enrolments pe, programs pro, people p 
-where l.student=pe.student and pro.id=pe.program and p.id=l.student and 
-l.uoc>=pro.uoc
+Q9_earnedUOC q, program_enrolments pe, programs pro, people p 
+where q.student=p.id and q.student=pe.student and pro.id=pe.program and 
+q.uoc >= pro.uoc
 ;
 
 -- Q10:
