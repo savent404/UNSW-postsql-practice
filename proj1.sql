@@ -24,12 +24,28 @@ as
 ;
 
 -- Q3:
+create or replace view Q3_comp9311(student, semester) 
+as 
+	select p.id, c.semester from 
+	subjects s, courses c, course_enrolments ce, people p, students ss 
+	where c.subject=s.id and ce.course=c.id and p.id=ce.student and ss.id=ce.student 
+	and s.code='COMP9311' and ss.stype='intl' and ce.mark >= 85
+;
+
+create or replace view Q3_comp9024(student, semester) 
+as 
+	select p.id, c.semester from 
+	subjects s, courses c, course_enrolments ce, people p, students ss 
+	where c.subject=s.id and ce.course=c.id and p.id=ce.student and ss.id=ce.student 
+	and s.code='COMP9024' and ss.stype='intl' and ce.mark >= 85
+;
+
 create or replace view Q3(unswid, name)
 as 
-	select p.unswid,p.name  
-	from subjects s, courses c, course_enrolments cc, people p 
-	where ((s.code='COMP9311' or s.code='COMP9024') and c.subject=s.id and cc.course=c.id and p.id=cc.student and cc.mark > 84) 
-	group by p.unswid,p.name having count(p.name) > 1
+	select p.unswid, p.name, s.stype from 
+	Q3_comp9311 q1, Q3_comp9024 q2, people p, students s 
+	where q1.student=q2.student and p.id=q1.student and q1.semester=q2.semester 
+	and s.id=p.id
 ;
 -- Q4:
 
