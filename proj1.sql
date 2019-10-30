@@ -242,7 +242,7 @@ q.class=c.id and c.room=r.id
 ;
 create or replace view Q10_usage(usage, runswid, rlongname)
 as 
-select sum(ceil(extract(doy from c.enddate) - extract(doy from c.startdate)/7) * c.dayofwk), r.unswid, r.longname from 
+select count(*), r.unswid, r.longname from 
 classes c, Q10_classesIn2011usingLT q, rooms r where 
 q.class=c.id and c.room=r.id group by r.unswid, r.longname
 ;
