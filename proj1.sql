@@ -107,9 +107,9 @@ as
 -- not for sure;
 
 -- semester=10S1, stream.name='Management', student.stype='local'
-create or replace view Q6_listAllRelatedRecord(student, offeredByOrgUnit)
+create or replace view Q6_listAllRelatedRecord(student)
 as 
-	select std.id, s.offeredBy 
+	select distinct std.id 
 	from semesters sem 
 	join Program_enrolments pe on (sem.year=2010 and sem.term='S1' and pe.semester=sem.id) 
 	join stream_enrolments se on (se.partof=pe.id) 
@@ -119,16 +119,21 @@ as
 
 create or replace view Q6_searchOfferedByFE(student)
 as 
-	select student 
-	from Q6_listAllRelatedStudent 
-	where offeredByOrgUnit=(select id from OrgUnits where name='Faculty of Engineering')
+	select distinct student 
+	from OrgUnits o 
+	join subjects s on (o.name='Faculty of Engineering' and s.offeredBy=o.id) 
+	join courses c on (s.id=c.subject) 
+	join course_enrolments ce on (ce.course=c.id) 
 ;
 
 create or replace view Q6(num)
 as 
 	select count(distinct a1.student) 
 	from Q6_listAllRelatedRecord a1 
-	where a1.student not in (select student from Q6_listStudentOfferedByFE)
+	where a1.student not in (
+		select q1.student from 
+		Q6_searchOfferedByFE q1
+	)
 ;
 
 -- Q7:
