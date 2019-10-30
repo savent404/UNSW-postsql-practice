@@ -42,7 +42,7 @@ as
 
 create or replace view Q3(unswid, name)
 as 
-	select p.unswid, p.name, s.stype from 
+	select p.unswid, p.name from 
 	Q3_comp9311 q1, Q3_comp9024 q2, people p, students s 
 	where q1.student=q2.student and p.id=q1.student and q1.semester=q2.semester 
 	and s.id=p.id
@@ -226,7 +226,7 @@ as
 create or replace view Q9_earnedUOC(student, program, uoc)
 as 
 	select q2.student, q2.program, sum(s.uoc) 
-	from Q9_matchedAveMark q1 join Q9_valideRecordMark q2 on (q1.student=q2.student) 
+	from Q9_matchedAvgMark q1 join Q9_valideRecordMark q2 on (q1.student=q2.student) 
 	join courses c on (q2.course=c.id) 
 	join subjects s on (c.subject=s.id) 
 	group by q2.student, q2.program
